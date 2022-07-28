@@ -1,267 +1,190 @@
-#include <fcntl.h>	   // O_* constants
-#include <sys/stat.h>  // mkfifo()
-#include <sys/types.h> // mkfifo()
-#include <string.h>	   // strlen() strcmp()
-#include <stdio.h>	   // printf() scanf()
+//This is a tic tac toe game written in C designed for beginners
+//(This doesn't contain the use of pointers or other more advanced C topics)
+#include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
-#include <stdlib.h> // exit()
-#include <time.h>	// time
+#include <time.h>
 
-// #include "my_const.h"
+char board[3][3];
+const char PLAYER = 'X';
+const char COMPUTER = 'O';
 
-// global variables
-char gameboard[3][3];
-const char PLAYER1 = 'X';
-const char PLAYER2 = 'O';
-
-void resetGame();	   // 2D character array
-void printGame();	   // print 2D character array
-int checkSpace(); // if invoking function, if return 0 = gameOver
-void player1Move();
-void player2Move();	// random seed is implemented
-char checkWin(); // check
+void resetBoard();
+void printBoard();
+int checkFreeSpaces();
+void playerMove();
+void computerMove();
+char checkWinner();
 void printWinner(char);
-
 
 int main()
 {
+   char winner = ' ';
+   char response = ' ';
 
-	// create the named pipe (FIFO) if not exist
-	// int f1 = mkfifo(myfifo_1to2, 0666);
-	// int f2 = mkfifo(myfifo_2to1, 0666);
-	// printf("@p1: f1 = %d  f2 = %d\n", f1, f2);
+   do
+   {
+      winner = ' ';
+      response = ' ';
+      resetBoard();
 
-	// char rd_data[MAX], wr_data[MAX];
+      while(winner == ' ' && checkFreeSpaces() != 0)
+      {
+         printBoard();
 
-	// printf("waiting for named pipes open ... \n");
+         playerMove();
+         winner = checkWinner();
+         if(winner != ' ' || checkFreeSpaces() == 0)
+         {
+            break;
+         }
 
-	// // P1&P2: order of open() is important to unblock processes
-	// // open() for WR will be blocked until the other side is open for RD
-	// int fd_wr = open(myfifo_1to2, O_WRONLY);
-	// // open() for RD will be blocked until the other side is open for WR
-	// int	fd_rd = open(myfifo_2to1, O_RDONLY);
+         computerMove();
+         winner = checkWinner();
+         if(winner != ' ' || checkFreeSpaces() == 0)
+         {
+            break;
+         }
+      }
 
-	// printf("named pipes opened and ready\n");
+      printBoard();
+      printWinner(winner);
 
-	char winner = ' '; // local variable: if winner is empty = no winner, if player wins = X or O
-	char playAgain;
+      printf("\nWould you like to play again? (Y/N): ");
+      scanf("%c\n");
+      scanf("%c", &response);
+      response = toupper(response);
+   } while (response == 'Y');
 
-	do
-	{
-		winner = ' ';
-		playAgain = ' ';
-		resetGame();
+   printf("Thanks for playing!");
 
-		while (true || winner == ' ' && checkSpace() != 0)
-		{
-			printGame();
-
-			player1Move();
-			winner = checkWin();
-
-			if (winner != ' ' || checkSpace() == 0)
-			{
-				break;
-			}
-
-			player2Move();
-			winner = checkWin();
-
-			if (winner != ' ' || checkSpace() == 0)
-			{
-				break;
-			}
-		}
-
-		printGame();
-		printWinner(winner);
-
-		printf("Play Again? (Y/N): ");
-		// scanf("%c");
-		scanf("%c", &playAgain);
-		playAgain = toupper(playAgain);
-	} while (playAgain == 'Y');
-
-	printf("Thank you for playing\n");
-
-	// prog1: write first
-	// while (true) {
-	// 	printf("Enter a message (Q to quit): ");
-	// 	fgets(wr_data, MAX, stdin);
-	// 	wr_data[strlen(wr_data) - 1] = '\0'; // '\n' is replaced by NULL ('\0')
-		// write(fd_wr, wr_data, strlen(wr_data) + 1);
-	// 	if (strcmp(wr_data, "Q") == 0)
-	// 		break;
-
-	// 	read(fd_rd, rd_data, sizeof(rd_data));
-	// 	printf("received: %s\n", rd_data);
-	// }
-	// close(fd_wr);
-	// close(fd_rd);
-	// unlink(myfifo_1to2);
-	// unlink(myfifo_2to1);
-	// printf("Prog1 exits\n");
-
-	return 0;
+   return 0;
 }
 
-void resetGame()
+void resetBoard()
 {
-	for (int i = 0; i < 3; i++)
-	{
-		for (int j = 0; j < 3; j++)
-		{
-			gameboard[i][j] = ' '; // set to emptySpace, each element in 2D array will be empty space clearing
-		}
-	}
+   for(int i = 0; i < 3; i++)
+   {
+      for(int j = 0; j < 3; j++)
+      {
+         board[i][j] = ' ';
+      }
+   }
 }
-
-void printGame()
+void printBoard()
 {
-	printf("let's play TICTACTOE~~~\n");
-	printf("+-+-+-+\n");
-	printf("|%c|%c|%c|\n", gameboard[0][0], gameboard[0][1], gameboard[0][2]);
-	printf("+-+-+-+\n");
-	printf("|%c|%c|%c|\n", gameboard[1][0], gameboard[1][1], gameboard[1][2]);
-	printf("+-+-+-+\n");
-	printf("|%c|%c|%c|\n", gameboard[2][0], gameboard[2][1], gameboard[2][2]);
-	printf("+-+-+-+\n");
+   printf(" %c | %c | %c ", board[0][0], board[0][1], board[0][2]);
+   printf("\n---|---|---\n");
+   printf(" %c | %c | %c ", board[1][0], board[1][1], board[1][2]);
+   printf("\n---|---|---\n");
+   printf(" %c | %c | %c ", board[2][0], board[2][1], board[2][2]);
+   printf("\n");
 }
-
-int checkSpace()
+int checkFreeSpaces()
 {
-	int spaces = 9;
+   int freeSpaces = 9;
 
-	for (int i = 0; i < 3; i++)
-	{
-		for (int j = 0; j < 3; j++)
-		{
-			if (gameboard[i][j] != ' ')
-			{
-				spaces--; // decrement by 1, if spot is occupied
-			}
-		}
-	}
-	return spaces; // if return 0 = gameover
+   for(int i = 0; i < 3; i++)
+   {
+      for(int j = 0; j < 3; j++)
+      {
+         if(board[i][j] != ' ')
+         {
+            freeSpaces--;
+         }
+      }
+   }
+   return freeSpaces;
 }
-
-void player1Move()
+void playerMove()
 {
-	int x;
-	int y;
+   int x;
+   int y;
 
-	do
-	{
-		printf("Input Row [1-3]: ");
-		scanf("%d", &x); // user enter in 1-3, with arrays begin with 0
-		x--;			 // decrement x by 1, providing row 0-2
-		printf("Input Column [1-3]: ");
-		scanf("%d", &y);
-		y--; // decrement y by 1, providing row
+   do
+   {
+      printf("Enter row #(1-3): ");
+      scanf("%d", &x);
+      x--;
+      printf("Enter column #(1-3): ");
+      scanf("%d", &y);
+      y--;
 
-		// check to see cordinates that user gave are occupied
-		if (gameboard[x][y] != ' ')
-		{
-			printf("Spot has been occupied\n");
-		}
-		else
-		{
-			gameboard[x][y] = PLAYER1;
-			break;
-		}
-	} while (gameboard[x][y] != ' ');
+      if(board[x][y] != ' ')
+      {
+         printf("Invalid move!\n");
+      }
+      else
+      {
+         board[x][y] = PLAYER;
+         break;
+      }
+   } while (board[x][y] != ' ');
+   
 }
-
-void player2Move()
+void computerMove()
 {
-	// creates a seed based on current time
-	srand(time(0));
-	int x;
-	int y;
+   //creates a seed based on current time
+   srand(time(0));
+   int x;
+   int y;
 
-	if (checkSpace() > 0)
-	{
-		do
-		{
-			x = rand() % 3;
-			y = rand() % 3;
-		} while (gameboard[x][y] != ' ');
-
-		gameboard[x][y] = PLAYER2;
-	}
-	else
-	{
-		printWinner(' '); // means no winner = draw
-	}
-
-
-	// int x;
-	// int y;
-
-	// do
-	// {
-	// 	printf("Enter Row [1-3]: ");
-	// 	scanf("%d", &x); // user enter in 1-3, with arrays begin with 0
-	// 	x--;			 // decrement x by 1, providing row 0-2
-	// 	printf("Enter Column [1-3]: ");
-	// 	scanf("%d", &y);
-	// 	y--; // decrement y by 1, providing row
-
-	// 	// check to see cordinates that user gave are occupied
-	// 	if (gameboard[x][y] != ' ')
-	// 	{
-	// 		printf("Spot has been taken");
-	// 	}
-	// 	else
-	// 	{
-	// 		gameboard[x][y] = PLAYER2;
-	// 		break;
-	// 	}
-	// } while (gameboard[x][y] != ' ');
+   if(checkFreeSpaces() > 0)
+   {
+      do
+      {
+         x = rand() % 3;
+         y = rand() % 3;
+      } while (board[x][y] != ' ');
+      
+      board[x][y] = COMPUTER;
+   }
+   else
+   {
+      printWinner(' ');
+   }
 }
-
-char checkWin()
+char checkWinner()
 {
-	// check each row
-	for (int i = 0; i < 3; i++)
-	{
-		if (gameboard[i][0] == gameboard[i][1] && gameboard[i][0] == gameboard[i][2])
-		{ // top-left
-			return gameboard[i][0];
-		}
-	}
-	// check each column
-	for (int i = 0; i < 3; i++)
-	{
-		if (gameboard[0][i] == gameboard[1][i] && gameboard[0][i] == gameboard[2][i])
-		{ 
-			return gameboard[0][i];
-		}
-	}
-	// check diagonal
-	if (gameboard[0][0] == gameboard[1][1] && gameboard[0][0] == gameboard[2][2])
-	{ // [1,1] = middle
-		return gameboard[0][0];
-	}
-	if (gameboard[0][2] == gameboard[1][1] && gameboard[0][2] == gameboard[2][0])
-	{ // [0,2] = bottom-left [2,0] = top-right
-		return gameboard[0][2];
-	}
-	return ' '; // currently is no winner
-}
+   //check rows
+   for(int i = 0; i < 3; i++)
+   {
+      if(board[i][0] == board[i][1] && board[i][0] == board[i][2])
+      {
+         return board[i][0];
+      }
+   }
+   //check columns
+   for(int i = 0; i < 3; i++)
+   {
+      if(board[0][i] == board[1][i] && board[0][i] == board[2][i])
+      {
+         return board[0][i];
+      }
+   }
+   //check diagonals
+   if(board[0][0] == board[1][1] && board[0][0] == board[2][2])
+   {
+      return board[0][0];
+   }
+   if(board[0][2] == board[1][1] && board[0][2] == board[2][0])
+   {
+      return board[0][2];
+   }
 
+   return ' ';
+}
 void printWinner(char winner)
 {
-	if (winner == PLAYER1)
-	{
-		printf("PLAYER1 WIN");
-	}
-	else if (winner == PLAYER2)
-	{
-		printf("PLAYER2 WIN");
-	}
-	else
-	{
-		printf("DRAW");
-	}
+   if(winner == PLAYER)
+   {
+      printf("YOU WIN!");
+   }
+   else if(winner == COMPUTER)
+   {
+      printf("YOU LOSE!");
+   }
+   else{
+      printf("IT'S A TIE!");
+   }
 }
