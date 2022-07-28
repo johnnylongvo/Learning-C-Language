@@ -8,6 +8,7 @@ int main() {
     // %f = float 
     // %lf = double 
     // %d = integer: digit
+    // %p to display address &
 
     // %.1 = decimal 
     // %1 = minimum field width 
