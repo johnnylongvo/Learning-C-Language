@@ -6,6 +6,8 @@ int main() {
 switch = a more efficient alternative to using many "else if" statements 
         allowing a value to be tested for equality against many cases
 
+// bad practice to use a lot of else/if statements
+
 */
 
 char grade;
